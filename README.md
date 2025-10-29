@@ -1,6 +1,6 @@
 # Cross-Chain Bridge Event Listener
 
-This project is a Python-based simulation of a crucial component for a decentralized cross-chain bridge: an event listener. The script is designed to monitor a smart contract on a source blockchain (e.g., Ethereum), detect specific events (`TokensLocked`), and simulate the process of triggering a corresponding action on a destination blockchain (e.g., Polygon).
+This project is a Python-based simulation of a crucial component of a decentralized cross-chain bridge: an event listener. The script is designed to monitor a smart contract on a source blockchain (e.g., Ethereum), detect specific events (`TokensLocked`), and simulate the process of triggering a corresponding action on a destination blockchain (e.g., Polygon).
 
 ## Concept
 
@@ -17,7 +17,7 @@ This script plays the role of a **validator node's listening component**. It is 
 
 The script is designed with a clear separation of concerns, using several classes to handle different aspects of the process. This makes the system modular, testable, and easier to maintain.
 
--   `Config`: Manages all configuration loaded from a `.env` file. This includes RPC endpoints, contract addresses, private keys, and operational parameters. It centralizes configuration, preventing hardcoded sensitive information.
+-   `Config`: Manages all configuration loaded from a `.env` file. This includes RPC endpoints, contract addresses, private keys, and operational parameters. It centralizes configuration, preventing the hardcoding of sensitive information.
 
 -   `BlockchainConnector`: A wrapper around the `web3.py` library that handles the connection to a specific blockchain node. It initializes the `Web3` instance and the contract object, providing a clean interface for interaction.
 
@@ -25,7 +25,7 @@ The script is designed with a clear separation of concerns, using several classe
 
 -   `EventHandler`: Responsible for processing events found by the `EventScanner`. In this simulation, it logs event details, simulates a call to an external validation API (e.g., for risk analysis), and prepares the corresponding transaction that would be sent to the destination chain. This class encapsulates the "business logic" of the bridge.
 
--   `CrossChainBridgeListener`: The main orchestrator class. It initializes all the other components, manages the main execution loop, and handles state persistence (i.e., saving and loading the last block number it successfully scanned) to ensure events are not missed or re-processed upon restart.
+-   `CrossChainBridgeListener`: The main orchestrator class. It initializes all other components, manages the main execution loop, and handles state persistence (i.e., saving and loading the last successfully scanned block number) to ensure events are not missed or reprocessed upon restart.
 
 ### Data Flow
 
@@ -50,9 +50,9 @@ Instead of querying for events on every new block, the listener operates in cycl
 
 ### Error Handling
 
--   **Connection Errors**: The script is wrapped in `try...except` blocks to catch RPC connection errors. If a connection fails, it will log the error and retry after a delay.
--   **Configuration Errors**: The script will fail on startup with a clear message if any required environment variables are missing.
--   **Event Processing Failures**: If the `EventHandler` fails to process an event (e.g., the simulated validation API call fails), it returns `False`. The main loop detects this, stops processing further events in the current batch, and does *not* update the `last_scanned_block`. This ensures that the entire block range containing the failed event will be retried in the next cycle.
+-   **Connection Errors**: The script uses `try...except` blocks to catch RPC connection errors. If a connection fails, it will log the error and retry after a delay.
+-   **Configuration Errors**: The script will fail to start with a clear message if any required environment variables are missing.
+-   **Event Processing Failures**: If the `EventHandler` fails to process an event (e.g., the simulated validation API call fails), it returns `False`. The main loop detects this failure, stops processing further events in the current batch, and does not update `last_scanned_block`. This ensures that the entire block range containing the failed event will be retried in the next cycle.
 
 ## Usage
 
@@ -113,14 +113,16 @@ from listener import CrossChainBridgeListener
 import logging
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
+    logging.basicConfig(
+        level=logging.INFO, 
+        format='%(asctime)s - %(levelname)s - %(name)s - %(message)s'
+    )
     
     try:
         listener = CrossChainBridgeListener()
         listener.run()
     except Exception as e:
         logging.critical(f"A critical error occurred: {e}", exc_info=True)
-
 ```
 
 Execute it from your terminal:
@@ -131,9 +133,9 @@ python main.py
 
 You will see log output in your terminal as the listener connects to the chains, scans for blocks, and processes any events it finds.
 
-```
-2023-10-27 14:30:00 - INFO - CrossChainBridgeListener - Loaded state: last scanned block is 123456
-2023-10-27 14:30:01 - INFO - CrossChainBridgeListener - Starting cross-chain bridge listener...
-2023-10-27 14:30:02 - INFO - EventScanner - Scanning for events from block 123457 to 123556
+```log
+2023-10-27 14:30:00,123 - INFO - CrossChainBridgeListener - Loaded state: last scanned block is 123456
+2023-10-27 14:30:01,456 - INFO - CrossChainBridgeListener - Starting cross-chain bridge listener...
+2023-10-27 14:30:02,789 - INFO - EventScanner - Scanning for events from block 123457 to 123556
 ...
 ```
